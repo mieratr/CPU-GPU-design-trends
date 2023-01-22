@@ -1,0 +1,287 @@
+---
+title: "CPU and GPU Design Trends Analysis"
+output: html_document
+date: "2022-12-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tinytex)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+
+##Read in data
+
+cpu_gpu_data <- read_csv("chip_dataset.csv")
+names(cpu_gpu_data)
+
+##Factorize Type
+
+cgd_facType <- cpu_gpu_data %>% mutate(.,Type=factor(ifelse(Type=="CPU","CPU","GPU")))
+
+```
+
+```{r Q1A setup}
+
+##Performance indicators: Process size, thermal design power (TDP), die size, transistors, frequency
+
+##Create function to remove NAs
+
+remove_nas <- function(data,indicator){
+  if(indicator=="process_size"){
+    cgd_PS <- subset(data, !is.na(`Process Size (nm)`))
+    #return(cgd_PS)
+  }
+  else if(indicator=="TDP"){
+    cgd_TDP <- subset(data, !is.na(`TDP (W)`))
+    #return(cgd_TDP)
+  }
+  else if(indicator=="die_size"){
+    cgd_DS <- subset(data, !is.na(`Die Size (mm^2)`))
+    #return(cgd_DS)
+  }
+  else if(indicator=="transistors"){
+    cgd_T <- subset(data, !is.na(`Transistors (million)`))
+    #return(cgd_T)
+  }
+  else if(indicator=="frequency"){
+    cgd_F <- subset(data, !is.na(`Freq (MHz)`))
+    #return(cgd_F)
+  }
+  else{
+    print("indicator should equal 'process_size', 'TDP', 'die_size', 'transistors', or 'frequency'")
+  }
+}
+
+#Create function to calculate CPU and GPU summaries by indicator
+
+summary_by_indicator <- function(data,indicator){
+  if(indicator=="process_size"){
+    no_NA_PS <- remove_nas(data,'process_size')
+    summary_PS <- no_NA_PS %>% group_by(Type) %>% select(Type,`Process Size (nm)`) %>% summarise_all(list(Avg=mean,Med=median,StD=sd,IQR=IQR))
+    return(summary_PS)
+  }
+  else if(indicator=="TDP"){
+    summary_TDP <- remove_nas(data,'TDP') %>% group_by(Type) %>% select(Type,`TDP (W)`) %>% summarise_all(list(Avg=mean,Med=median,StD=sd,IQR=IQR))
+    return(summary_TDP)
+  }
+  else if(indicator=="die_size"){
+    summary_DS <- remove_nas(data,'die_size') %>% group_by(Type) %>% select(Type,`Die Size (mm^2)`) %>% summarise_all(list(Avg=mean,Med=median,StD=sd,IQR=IQR))
+    return(summary_DS)
+  }
+  else if(indicator=="transistors"){
+    summary_T <- remove_nas(data,'transistors') %>% group_by(Type) %>% select(Type,`Transistors (million)`) %>% summarise_all(list(Avg=mean,Med=median,StD=sd,IQR=IQR))
+    return(summary_T)
+  }
+  else if(indicator=="frequency"){
+    summary_TDP <- remove_nas(data,'frequency') %>% group_by(Type) %>% select(Type,`Freq (MHz)`) %>% summarise_all(list(Avg=mean,Med=median,StD=sd,IQR=IQR))
+    return(summary_TDP)
+  }
+  else{
+    print("indicator should equal 'process_size', 'TDP', 'die_size', 'transistors', or 'frequency'")
+  }
+}
+
+```
+
+Process Size:
+
+```{r Q1A Process Size Display}
+
+summary_by_indicator(cgd_facType,'process_size')
+
+ggplot(cgd_facType, aes(x=`Process Size (nm)`,group=Type,fill=Type)) + geom_histogram(bins=25,col="black") + facet_grid(rows=vars(Type)) + ylab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Process Size (nm)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot() + xlab("")
+
+```
+
+Process Size Analysis: According to the histogram, the two graphs have similar distributions for the process size. They are both positively skewed and skewed to the right, with most data clusters around 0 - 100 mm. From the boxplot, we can tell that CPU and GPU have the same maximum process size, but the minimum figure for CPU is larger than that of GPU, and CPU has a larger interquartile range. Notably, there is an outlier in the GPU's data set at 250mm, which could affect the mean of the GPU data.
+
+
+TDP:
+
+```{r Q1A TDP Display}
+
+summary_by_indicator(cgd_facType,'TDP')
+
+ggplot(cgd_facType, aes(x=`TDP (W)`,group=Type,fill=Type)) + geom_histogram(bins=25,col="black") + facet_grid(rows=vars(Type)) + ylab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`TDP (W)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot() + xlab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`TDP (W)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot(outlier.shape=NA) + xlab("") + coord_cartesian(ylim=c(0,250))
+
+
+```
+
+TDP Analysis: The TDP data for CPU and GPU has a very similar distribution. They are both positively skewed and skewed to the right and have most of their data clusters between 0 - 125 W. According to the boxplot, the data for CPU has a larger median, but the data for GPU has a significantly larger interquartile range. Despite the same minimum, GPU has a larger maximum and a great number of large outliers. Therefore, the TDP data for TDP has a broader spread.
+
+Die Size:
+
+```{r Q1A Die Size Display}
+
+summary_by_indicator(cgd_facType,'die_size')
+
+ggplot(cgd_facType, aes(x=`Die Size (mm^2)`,group=Type,fill=Type)) + geom_histogram(bins=25,col="black") + facet_grid(rows=vars(Type)) + ylab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Die Size (mm^2)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot() + xlab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Die Size (mm^2)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot(outlier.shape=NA) + xlab("") + coord_cartesian(ylim=c(0,500))
+
+```
+
+Die Size Analysis: The die size data for CPU and GPU has a very similar distribution. They are both positively skewed and skewed to the right. Particularly, die size data for GPU has a much wider spread than CPU. There are many data above 400mm for GPU but a very small number of data for CPU above 400mm. The two groups of data have practically the same median score and the same minimum score. However, CPU has a smaller interquartile range, a smaller maximum score, as well as significantly fewer large outliers.
+
+Transistor:
+
+```{r Q1A Transistor Display}
+
+summary_by_indicator(cgd_facType,'transistors')
+
+ggplot(cgd_facType, aes(x=`Transistors (million)`,group=Type,fill=Type)) + geom_histogram(bins=25,col="black") + facet_grid(rows=vars(Type)) + ylab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Transistors (million)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot() + xlab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Transistors (million)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot(outlier.shape=NA) + xlab("") + coord_cartesian(ylim=c(0,7000))
+
+```
+
+Transistor Analysis:The transistors data for CPU and GPU have a very similar distribution. They are both positively skewed and skewed to the right. For both types, the data concentrates around 0 - 200 million. However, they have very different median and interquartile ranges, with GPU having significantly larger scores for both. Moreover, GPU has a great number of large outliers, which could explain its large median score.
+
+Frequency:
+
+```{r Q1A Frequency Display}
+
+summary_by_indicator(cgd_facType,'frequency')
+
+ggplot(cgd_facType, aes(x=`Freq (MHz)`,group=Type,fill=Type)) + geom_histogram(bins=25,col="black") + facet_grid(rows=vars(Type)) + ylab("")
+
+ggplot(cgd_facType, aes(x=Type,y=`Freq (MHz)`,fill=Type)) + stat_boxplot(geom="errorbar",width=0.25) + geom_boxplot() + xlab("")
+
+```
+
+Frequency Analysis: For the Frequency, the distribution of the CPU and GPU data are distinctly different. While the GPU data is positively skewed and skewed to the right, the data for the CPU is symmetrically distributed and appears to be bimodal. The boxplot shows that the CPU has a significantly larger median, interquartile range, maximum, and minimum. The GPU data has more outliers, but they are even smaller than CPU's median.
+
+
+
+```{r Q1B}
+
+##collapse foundries
+
+##No Type consideration
+
+foundries_wide <- cgd_facType %>% group_by(Vendor) %>% select(Foundry,Vendor) %>% count(Vendor,Foundry) %>% pivot_wider(.,names_from=Foundry,values_from=n) %>% replace(is.na(.),0) 
+
+cols_to_collapse <- foundries_wide %>% select_if(~ !is.numeric(.) || sum(.) < 100)
+foundries_wide$Other <- apply(cols_to_collapse [,-1],1,sum)
+fc <- foundries_wide %>% select_if(~ !is.numeric(.) || sum(.) > 100)
+fc_long <- fc %>% pivot_longer(.,cols=2:6,names_to="Foundry",values_to="Processors")
+
+print(fc)
+
+##Bar Graph, no Type
+
+ggplot(fc_long,aes(x=Vendor,y=Processors,fill=Foundry)) + geom_bar(stat='identity') + xlab('Vendors') + ylab('# of processors released')
+
+##Type consideration
+
+foundries_wide2 <- cgd_facType %>% group_by(Vendor) %>% select(Type,Foundry,Vendor) %>% count(Type,Foundry) %>% arrange(.,Vendor) %>% pivot_wider(.,names_from=Foundry,values_from=n) %>% replace(is.na(.),0)
+
+cols_to_collapse2 <- foundries_wide2 %>% select_if(~ !is.numeric(.) || sum(.) < 100)
+foundries_wide2$Other <- apply(cols_to_collapse2 [,-c(1:2)],1,sum)
+fc2 <- foundries_wide2 %>% select_if(~ !is.numeric(.) || sum(.) > 100)
+fc_long2 <- fc2 %>% pivot_longer(.,cols=3:7,names_to="Foundry",values_to="Processors")
+
+print(fc2)
+
+##Bar graph
+
+ggplot(fc_long2,aes(x=Vendor,y=Processors,fill=Foundry)) + geom_bar(stat='identity') + xlab('Vendors') + ylab('# of processors released') + facet_wrap(~Type)
+
+```
+
+Q1B Analysis: The numerical summaries and the graphs show that there isn't a strong association between the number of processors released by the vendors and the foundries. For all vendors, the composition of their foundries is mixed. For example, the processors sold by AMD come from unknown foundries, TSMC, and GF. This case applies to all vendors. For Intel, although only two processors are produced by foundries other than itself, we still can't say they are exclusively released by Intel. The lack of association does not depend on the processor type; neither the CPU nor GPU data demonstrate a clear pattern of association. Each vendor's suppliers are different foundries, and they produce in different portions.
+
+```{r Q1C}
+cpu_gpu_data <- cpu_gpu_data[!is.na(cpu_gpu_data$`TDP (W)`),]
+cpu_gpu_data <- cpu_gpu_data[!is.na(cpu_gpu_data$`Die Size (mm^2)`),]
+type <- with(cpu_gpu_data, split(cpu_gpu_data, Type))
+corr <- vector("numeric", length(type))
+names(corr) <- names(type)
+for (i in seq_along(type)) {
+  corr[i] <- cor(as.numeric(unlist(type[[i]]['TDP (W)'])), 
+                 as.numeric(unlist(type[[i]]['Die Size (mm^2)'])))
+}
+print(corr)
+
+#graph
+ggplot(cpu_gpu_data,aes(x=`TDP (W)`,y=`Die Size (mm^2)`, col=Type,group=Type)) +
+  geom_point() + theme_bw() +  geom_smooth(method="lm",col="black")
+```
+
+Q1C Analysis: Numerically, the association between die size and thermal design for GPU is stronger than CPU's (0.73>0.41). Meanwhile, GPU's regression line in the plot is steeper than CPU's. In sum, the association between die size and thermal design power does depend on the type.
+
+```{r Q2A}
+
+##Association table between number of processors released by which foundry on which year
+
+foundries_year <- cgd_facType %>% mutate(.,`Release Date`=as.Date(`Release Date`)) %>% mutate(.,`Release Year`=format(`Release Date`,format="%Y")) %>% group_by(`Release Year`) %>% select(`Release Year`,Foundry) %>% count(`Release Year`,Foundry) %>% pivot_wider(.,names_from=Foundry,values_from=n) %>% mutate_at(c(2:11),~replace_na(.,0))
+
+foundries_year[is.na(foundries_year)] <- "Unknown"
+
+ctcyf <- foundries_year %>% select_if(~ !is.numeric(.) || sum(.) < 100)
+foundries_year$Other <- apply(ctcyf[,-1],1,sum)
+fy_c <- foundries_year %>% select_if(~ !is.numeric(.) || sum(.) > 100)
+fy_long <- fy_c %>% pivot_longer(.,cols=2:6,names_to="Foundry",values_to="Processors")
+
+print(fy_c)
+
+##Plot foundry processor count by year
+
+ggplot(fy_long,aes(x=`Release Year`,y=Processors,group=Foundry,fill=Foundry)) + geom_bar(stat='identity') + facet_grid(rows=vars(Foundry)) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+
+##Association table between number of processors released by which vendor on which year
+
+vendors_year <- cgd_facType %>% mutate(.,`Release Date`=as.Date(`Release Date`)) %>% mutate(.,`Release Year`=format(`Release Date`,format="%Y")) %>% group_by(`Release Year`) %>% select(`Release Year`,Vendor) %>% count(`Release Year`,Vendor) %>% pivot_wider(.,names_from=Vendor,values_from=n) %>% mutate_at(c(2:6),~replace_na(.,0))
+
+vendors_year[is.na(vendors_year)] <- "Unknown"
+
+vy_long <- vendors_year %>% pivot_longer(.,cols=2:6,names_to="Vendor",values_to="Processors")
+
+print(vendors_year)
+
+##Plot vendor processor count by year
+
+ggplot(vy_long,aes(x=`Release Year`,y=Processors,group=Vendor,fill=Vendor)) + geom_bar(stat='identity') + facet_grid(rows=vars(Vendor)) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+
+```
+
+Q2B Analysis: For foundries, TSMC, Intel, and unknown foundries have been the leading producers of processors through the years. All foundries experienced a steady increase and a gradual decrease from 2000 - 2021. Only Intel was able to maintain its normal level of production throughout the years.
+For vendors, the trend is similar to the trend for foundries. AMD, Intel, NVIDIA, and ATI are the top vendors of the processors. However, ATI stopped selling the processors in 2014. AMD, Intel, and NVIDIA all experienced a gradual increase from 2000 - 2012 and a decrease from 2013 - 2021.
+
+```{r Q2B}
+library(gridExtra)
+release_year <- cpu_gpu_data %>% pull('Release Date')
+str_split(release_year, "-")[0]
+sapply(strsplit(release_year,"-"), "[", 1)
+df <- cpu_gpu_data %>% separate("Release Date", c("Release Year"))
+df <- filter(df, `Release Year` != "NaT")
+transistors_by_all_year <- aggregate(`Transistors (million)` ~ `Release Year`, data = df, mean)
+transistors_by_even_year <- transistors_by_all_year %>% filter(as.numeric(`Release Year`) %% 2 == 0)
+transistors_by_even_year 
+transistors_by_odd_year <- transistors_by_all_year %>% filter(as.numeric(`Release Year`) %% 2 != 0)
+transistors_by_odd_year 
+
+plot_for_even_year <- ggplot(data=transistors_by_even_year, aes(x = `Release Year`, y= `Transistors (million)`, fill=`Release Year`)) + geom_bar(stat="identity") + ylab("Transistors (million)") + labs(title="Number of transistors per even year") 
+
+plot_for_odd_year <- ggplot(data=transistors_by_odd_year, aes(x = `Release Year`, y= `Transistors (million)`, fill=`Release Year`)) + geom_bar(stat="identity") + scale_fill_viridis_d() + ylab("Transistors (million)") + labs(title="Number of transistors per odd year") 
+grid.arrange(plot_for_even_year, plot_for_odd_year, nrow = 2)
+
+
+```
+
+Q2B Analysis: In order to avoid generalization, we inspected the trend for both odd years and even years. Since the number of transistors is too small to visualize in the graphs before 2012, the data frame shows that for even years, transistor numbers in microchips doubled for some biennial years but did not double for some as well. It is easier to tell this fact from the bar graph from 2012 onward. For the odd years, this is more clear both numerically and graphically that the number of transistors contained did not double. Therefore, despite the general increasing trend, the number of transistors did not double every two years. 
